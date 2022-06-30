@@ -1,0 +1,29 @@
+{
+  "name": "vibes-react-native-example",
+  "description": "Example app for vibes-react-native",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "android": "react-native run-android",
+    "ios": "react-native run-ios",
+    "start": "react-native start"
+  },
+  "dependencies": {
+    "@react-native-clipboard/clipboard": "^1.10.0",
+    "@react-native-community/netinfo": "^9.1.0",
+    "@types/react": "^18.0.8",
+    "@types/react-native": "^0.67.6",
+    "i": "^0.3.7",
+    "npm": "^8.10.0",
+    "react": "^17.0.2",
+    "react-native": "0.68.1",
+    "react-native-device-info": "^8.7.1",
+    "react-native-easy-grid": "^0.2.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.17.9",
+    "@babel/runtime": "^7.17.9",
+    "babel-plugin-module-resolver": "^4.1.0",
+    "metro-react-native-babel-preset": "^0.70.2"
+  }
+}
