@@ -1,0 +1,151 @@
+---
+format_version: '11'
+default_step_lib_source: 'https://github.com/bitrise-io/bitrise-steplib.git'
+project_type: react-native
+trigger_map:
+- push_branch: develop
+  workflow: primary
+- pull_request_source_branch: '*'
+  workflow: primary
+- tag: '*'
+  workflow: deploy
+workflows:
+  deploy:
+    description: >
+      Tests, builds and deploys the app using *Deploy to bitrise.io* Step.
+
+
+      Next steps:
+
+      - Set up an [Apple service with API
+      key](https://devcenter.bitrise.io/en/accounts/connecting-to-services/connecting-to-an-apple-service-with-api-key.html).
+
+      - Check out [Getting started with React Native
+      apps](https://devcenter.bitrise.io/en/getting-started/getting-started-with-react-native-apps.html).
+    steps:
+    - script:
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -e
+            # debug log
+            set -x
+
+            if [ -z ${BITRISE_GIT_TAG+x} ]; 
+              then echo "This is a PR"; 
+            else  
+              BUNDLE_VERSION_SHORT_STRING=`expr "$BITRISE_GIT_TAG" : '\([0-9]\.[0-9]\.[0-9]-.*\.\)'`
+              BUNDLE_VERSION=${BITRISE_GIT_TAG#"$BUNDLE_VERSION_SHORT_STRING"}
+              BUNDLE_VERSION_SHORT_STRING=${BUNDLE_VERSION_SHORT_STRING%?}
+
+              envman add --key BUNDLE_VERSION_SHORT_STRING --value $BUNDLE_VERSION_SHORT_STRING
+              envman add --key BUNDLE_VERSION --value $BUNDLE_VERSION
+            fi
+    - activate-ssh-key@4: {}
+    - git-clone@6: {}
+    - npm@1:
+        inputs:
+        - workdir: $WORKDIR
+        - command: install
+    - install-missing-android-tools@3:
+        inputs:
+        - gradlew_path: $PROJECT_LOCATION/gradlew
+    - file-downloader:
+        inputs:
+        - source: $BITRISEIO_ANDROID_KEYSTORE_URL
+        - destination: $PROJECT_LOCATION/keystores/sample-app.keystore
+    - file-downloader:
+        inputs:
+        - source: $BITRISEIO_GOOGLE_SERVICES_JSON_URL
+        - destination: $PROJECT_LOCATION/app/google-services.json
+    - android-build@1:
+        inputs:
+        - project_location: $PROJECT_LOCATION
+        - module: $MODULE
+        - variant: $VARIANT
+    - fastlane@3.3.0:
+        inputs:
+        - lane: beta
+        - update_fastlane: 'true'
+        - work_dir: $PROJECT_LOCATION/
+    - cocoapods-install@2: {}
+    - certificate-and-profile-installer@1.10.3: {}
+    - set-ios-version@2.0.0:
+        inputs:
+        - bundle_version_short: $BUNDLE_VERSION_SHORT_STRING
+        - info_plist_file: $BITRISE_SOURCE_DIR/sample-app/ios/VibesExample/Info.plist
+        - bundle_version: $BUNDLE_VERSION
+    - set-xcode-plist-value@1:
+        inputs:
+        - plist_key: VibesAppId
+        - plist_value: $VIBES_APP_ID
+        - plist_path: $BITRISE_SOURCE_DIR/sample-app/ios/VibesExample/Info.plist
+    - set-xcode-plist-value@1:
+        inputs:
+        - plist_key: VibesApiURL
+        - plist_value: $VIBES_API_URL
+        - plist_path: $BITRISE_SOURCE_DIR/sample-app/ios/VibesExample/Info.plist
+    - xcode-archive@2.7.1:
+        inputs:
+        - project_path: $BITRISE_PROJECT_PATH
+        - scheme: $BITRISE_SCHEME
+        - export_method: $BITRISE_DISTRIBUTION_METHOD
+        - configuration: Release
+    - firebase-app-distribution@0.6.0:
+        inputs:
+        - app_path: $BITRISE_IPA_PATH
+        - app: $FIREBASE_IOS_APPID
+        - groups: ios-uat-testers
+        - firebase_token: $FIREBASE_TOKEN
+  primary:
+    description: >
+      Installs dependencies.
+
+
+      Next steps:
+
+      - Add tests to your project and configure the workflow to run them.
+
+      - Check out [Getting started with React Native
+      apps](https://devcenter.bitrise.io/en/getting-started/getting-started-with-react-native-apps.html).
+    steps:
+    - activate-ssh-key@4: {}
+    - git-clone@6: {}
+    - npm@1:
+        inputs:
+        - workdir: $WORKDIR
+        - command: install
+    - deploy-to-bitrise-io@2: {}
+meta:
+  bitrise.io:
+    stack: osx-xcode-13.2.x
+app:
+  envs:
+  - opts:
+      is_expand: false
+    WORKDIR: sample-app
+  - opts:
+      is_expand: false
+    PROJECT_LOCATION: sample-app/android
+  - opts:
+      is_expand: false
+    MODULE: app
+  - opts:
+      is_expand: false
+    VARIANT: Release
+  - opts:
+      is_expand: false
+    BITRISE_PROJECT_PATH: sample-app/ios/VibesExample.xcworkspace
+  - opts:
+      is_expand: false
+    BITRISE_SCHEME: VibesExample
+  - opts:
+      is_expand: false
+    BITRISE_DISTRIBUTION_METHOD: ad-hoc
+  - opts:
+      is_expand: false
+    GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2048m -Xms256m"'
+  - opts:
+      is_expand: false
+    JAVA_OPTS: '-Xmx2048m -Xms256m'
