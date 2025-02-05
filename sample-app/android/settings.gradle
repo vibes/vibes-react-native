@@ -1,0 +1,6 @@
+rootProject.name = 'VibesExample'
+apply from: file("../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesSettingsGradle(settings)
+include ':app'
+
+include ':vibes-react-native'
+project(':vibes-react-native').projectDir = new File(rootProject.projectDir, '../../android')
