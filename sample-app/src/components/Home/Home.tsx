@@ -12,6 +12,7 @@ import {
   DeviceEventEmitter,
   Platform,
   TextInput,
+  Alert,
 } from 'react-native';
 import { Colors } from 'react-native/Libraries/NewAppScreen';
 import Clipboard from '@react-native-clipboard/clipboard';
@@ -31,24 +32,29 @@ const Home = ({ navigation }): React.ReactElement => {
   const [personKey, setPersonKey] = useState('');
   const [inboxMessages, setInboxMessages] = useState({});
 
-  const onPushReceived = (event: { payload: any }) => {
+  const onPushReceived = (event) => {
+    console.log('Push received', event) 
     // eslint-disable-next-line no-alert
-    alert('Push received. Payload -> ' + JSON.stringify(event.payload));
+    Alert.alert('Push received' + JSON.stringify(event))
   };
 
-  const onPushOpened = async (event: { payload: any }) => {
+  const onPushOpened = async (event) => {
+    console.log('Push opened', event)  
     // eslint-disable-next-line no-alert
-    alert('Push opened. Payload -> ' + JSON.stringify(event.payload));
+    Alert.alert('Push opened' + JSON.stringify(event))
   };
 
-  const eventEmitter =
-    Platform.OS === 'ios'
-      ? new NativeEventEmitter(NativeModules.PushEventEmitter)
-      : DeviceEventEmitter;
-
-  eventEmitter.addListener('pushReceived', onPushReceived);
-  eventEmitter.addListener('pushOpened', onPushOpened);
-
+  const addEventListeners = () => {
+    console.log("Creating event listeners");
+    const eventEmitter = Platform.OS === 'ios' ? new NativeEventEmitter(NativeModules.PushEventEmitter) : DeviceEventEmitter;
+        eventEmitter.addListener('pushReceived', onPushReceived);
+        eventEmitter.addListener('pushOpened', onPushOpened);
+        console.log("Event listeners created");
+  }
+  useEffect(() => {
+    addEventListeners()
+  }, []);
+  
   const onPressRegisterDevice = async () => {
     try {
       if (deviceId) {
@@ -56,6 +62,7 @@ const Home = ({ navigation }): React.ReactElement => {
         setDeviceId(null);
       } else {
         const result = await Vibes.registerDevice();
+        console.log('Register Device Result -> ' + JSON.stringify(result));
         setDeviceId(result.device_id);
       }
     } catch (error) {

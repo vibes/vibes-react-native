@@ -1,40 +1,39 @@
 const path = require('path');
-const blacklist = require('metro-config/src/defaults/exclusionList');
 const escape = require('escape-string-regexp');
+const exclusionList = require('metro-config/src/defaults/exclusionList');
+const {getDefaultConfig, mergeConfig} = require('@react-native/metro-config');
 const pak = require('../package.json');
 
-const root = path.resolve(__dirname, '..');
+const projectRoot = __dirname;
+const repoRoot = path.resolve(projectRoot, '..');
+const appNodeModules = path.resolve(projectRoot, 'node_modules');
 
-const modules = Object.keys({
-  ...pak.peerDependencies,
-});
-
-module.exports = {
-  projectRoot: __dirname,
-  watchFolders: [root],
-
-  // We need to make sure that only one version is loaded for peerDependencies
-  // So we blacklist them at the root, and alias them to the versions in example's node_modules
-  resolver: {
-    blacklistRE: blacklist(
-      modules.map(
-        (m) =>
-          new RegExp(`^${escape(path.join(root, 'node_modules', m))}\\/.*$`)
-      )
+/** Peer deps of the library: resolve from the example app, not the repo root. */
+const peerNames = Object.keys(pak.peerDependencies || {});
+const peerRootBlockList = peerNames.map(
+  (name) =>
+    new RegExp(
+      `^${escape(path.join(repoRoot, 'node_modules', name))}\\/.*$`,
     ),
+);
 
-    extraNodeModules: modules.reduce((acc, name) => {
-      acc[name] = path.join(__dirname, 'node_modules', name);
-      return acc;
-    }, {}),
-  },
+const extraNodeModules = peerNames.reduce((acc, name) => {
+  acc[name] = path.join(appNodeModules, name);
+  return acc;
+}, {});
+extraNodeModules['vibes-react-native'] = repoRoot;
 
-  transformer: {
-    getTransformOptions: async () => ({
-      transform: {
-        experimentalImportSupport: false,
-        inlineRequires: true,
-      },
-    }),
+/**
+ * Must extend `@react-native/metro-config` so `transformer.assetRegistryPath` (and the
+ * RN Babel transformer) are set. A plain `transformer: { getTransformOptions }` object
+ * replaces the whole transformer and restores Metro’s placeholder
+ * `missing-asset-registry-path`, which breaks image assets (e.g. React Navigation icons).
+ */
+module.exports = mergeConfig(getDefaultConfig(projectRoot), {
+  projectRoot,
+  watchFolders: [repoRoot],
+  resolver: {
+    blockList: exclusionList(peerRootBlockList),
+    extraNodeModules,
   },
-};
+});

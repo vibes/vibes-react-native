@@ -4,3 +4,6 @@ include ':app'
 
 include ':vibes-react-native'
 project(':vibes-react-native').projectDir = new File(rootProject.projectDir, '../../android')
+
+// Required for RN 0.74+: resolves com.android.tools.build:gradle, react-native-gradle-plugin, kotlin without explicit versions in root build.gradle.
+includeBuild('../node_modules/@react-native/gradle-plugin')

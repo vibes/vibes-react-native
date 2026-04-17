@@ -20,6 +20,7 @@
 #import <FlipperKitNetworkPlugin/FlipperKitNetworkPlugin.h>
 #import <SKIOSNetworkPlugin/SKIOSNetworkAdapter.h>
 #import <FlipperKitReactPlugin/FlipperKitReactPlugin.h>
+
 static void InitializeFlipper(UIApplication *application) {
   FlipperClient *client = [FlipperClient sharedClient];
   SKDescriptorMapper *layoutDescriptorMapper = [[SKDescriptorMapper alloc] initWithDefaults];
@@ -35,6 +36,15 @@ static void InitializeFlipper(UIApplication *application) {
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
+  VibesConfiguration *vibesConfig = [[VibesConfiguration alloc] initWithAdvertisingId:NULL
+                                                                                  apiUrl:@"https://public-api-uatus0.vibescm.com/mobile_apps"
+                                                                         trackingApiUrl:@"https://public-api-uatus0.vibescm.com/mobile_apps"
+                                                                                  logger:NULL
+                                                                             storageType:VibesStorageEnumUSERDEFAULTS
+                                                                       trackedEventTypes:[@[] mutableCopy]];
+  [Vibes configureWithAppId:@"3344c960-f53b-43d5-9b3a-2b4498703ef3"
+              configuration:vibesConfig];
+  
   #ifdef FB_SONARKIT_ENABLED
     InitializeFlipper(application);
   #endif
@@ -61,7 +71,7 @@ static void InitializeFlipper(UIApplication *application) {
     // When the app launch after user tap on notification (originally was not running / not in background)
     NSDictionary * payload = [launchOptions objectForKey:UIApplicationLaunchOptionsRemoteNotificationKey];
     NSLog(@"UIApplicationLaunchOptionsRemoteNotificationKey %@", @{@"payload": payload});
-    [PushEventEmitter sendPushOpenedEvent: @{@"payload": payload}];
+    [PushEventEmitter setInitialNotification: @{@"payload": payload}];
   }
 
   return YES;
@@ -119,14 +129,6 @@ static void InitializeFlipper(UIApplication *application) {
   [vibes receivedPushWith:userInfo at:[NSDate new]];
   [PushEventEmitter sendPushOpenedEvent: payload];
   
-}
-
-// Required to register for notifications
-- (void)application:(UIApplication *)application didRegisterUserNotificationSettings: (UIUserNotificationSettings *)notificationSettings
-{
-  
-  NSLog(@"------------------>>>>didRegisterUserNotificationSettings %@", notificationSettings);
-  [RCTPushNotificationManager didRegisterUserNotificationSettings: notificationSettings];
 }
 
 // Called when a notification is delivered to a foreground app.

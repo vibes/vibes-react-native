@@ -1,28 +1,15 @@
-buildscript {
-  if (project == rootProject) {
-    repositories {
-      google()
-      mavenCentral()
-      jcenter()
-    }
-
-    dependencies {
-      classpath 'com.android.tools.build:gradle:3.5.4'
-    }
-  }
-}
-
-apply plugin: 'com.android.library'
+apply plugin: "com.android.library"
 
 def safeExtGet(prop, fallback) {
   rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
 }
 
 android {
-  compileSdkVersion safeExtGet('Vibes_compileSdkVersion', 31)
+  namespace "com.vibes.push.rn.plugin"
+  compileSdkVersion safeExtGet("compileSdkVersion", 34)
   defaultConfig {
-    minSdkVersion safeExtGet('Vibes_minSdkVersion', 19)
-    targetSdkVersion safeExtGet('Vibes_targetSdkVersion', 31)
+    minSdkVersion safeExtGet("minSdkVersion", 23)
+    targetSdkVersion safeExtGet("targetSdkVersion", 34)
   }
   buildTypes {
     release {
@@ -30,7 +17,7 @@ android {
     }
   }
   lintOptions {
-    disable 'GradleCompatible'
+    disable "GradleCompatible"
   }
   compileOptions {
     sourceCompatibility JavaVersion.VERSION_1_8
@@ -40,22 +27,11 @@ android {
 
 repositories {
   mavenLocal()
-  maven {
-    url "$rootDir/../node_modules/react-native/android"
-  }
-
-  maven {
-    url "https://maven.pkg.github.com/vibes/android-sdk-repository"
-    credentials {
-      username = System.getenv("VIBES_GITHUB_USERNAME") ?: ""
-      password = System.getenv("VIBES_GITHUB_PASSWORD") ?: ""
-    }
-  }
-
   google()
   mavenCentral()
-  jcenter()
-
+  maven {
+    url "https://raw.githubusercontent.com/vibes/android-sdk-repository/releases/"
+  }
   maven {
     url "https://maven.pkg.github.com/vibes/android-sdk-repository"
     credentials {
@@ -66,10 +42,10 @@ repositories {
 }
 
 dependencies {
-  //noinspection GradleDynamicVersion
-  implementation "com.facebook.react:react-native:+"  // From node_modules
-  implementation "com.vibes.vibes:vibes:4.12.1"
-  implementation 'com.google.firebase:firebase-iid:21.1.0'
-  implementation 'com.google.firebase:firebase-messaging:23.0.8'
-  implementation 'com.google.code.gson:gson:2.9.0'
+  implementation "com.facebook.react:react-android"
+  // Exposed to the sample app (MainActivity uses com.vibes.vibes.*); use implementation if app does not import SDK directly.
+  api "com.vibes.vibes:vibes:4.10.0"
+  implementation "com.google.firebase:firebase-iid:21.1.0"
+  implementation "com.google.firebase:firebase-messaging:23.0.8"
+  implementation "com.google.code.gson:gson:2.9.0"
 }
