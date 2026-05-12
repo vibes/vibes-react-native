@@ -1,86 +1,63 @@
-/**
- * Copyright (c) Facebook, Inc. and its affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- */
-
 #import "AppDelegate.h"
 
-#import <React/RCTBridge.h>
 #import <React/RCTBundleURLProvider.h>
-#import <React/RCTRootView.h>
 #import <React/RCTPushNotificationManager.h>
+#import <ReactAppDependencyProvider/RCTAppDependencyProvider.h>
 #import <VibesExample-Swift.h>
-
-#ifdef FB_SONARKIT_ENABLED
-#import <FlipperKit/FlipperClient.h>
-#import <FlipperKitLayoutPlugin/FlipperKitLayoutPlugin.h>
-#import <FlipperKitUserDefaultsPlugin/FKUserDefaultsPlugin.h>
-#import <FlipperKitNetworkPlugin/FlipperKitNetworkPlugin.h>
-#import <SKIOSNetworkPlugin/SKIOSNetworkAdapter.h>
-#import <FlipperKitReactPlugin/FlipperKitReactPlugin.h>
-
-static void InitializeFlipper(UIApplication *application) {
-  FlipperClient *client = [FlipperClient sharedClient];
-  SKDescriptorMapper *layoutDescriptorMapper = [[SKDescriptorMapper alloc] initWithDefaults];
-  [client addPlugin:[[FlipperKitLayoutPlugin alloc] initWithRootNode:application withDescriptorMapper:layoutDescriptorMapper]];
-  [client addPlugin:[[FKUserDefaultsPlugin alloc] initWithSuiteName:nil]];
-  [client addPlugin:[FlipperKitReactPlugin new]];
-  [client addPlugin:[[FlipperKitNetworkPlugin alloc] initWithNetworkAdapter:[SKIOSNetworkAdapter new]]];
-  [client start];
-}
-#endif
 
 @implementation AppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
+  self.moduleName = @"VibesExample";
+  self.dependencyProvider = [RCTAppDependencyProvider new];
+  self.initialProps = @{};
+
   VibesConfiguration *vibesConfig = [[VibesConfiguration alloc] initWithAdvertisingId:NULL
-                                                                                  apiUrl:@"https://public-api-uatus0.vibescm.com/mobile_apps"
-                                                                         trackingApiUrl:@"https://public-api-uatus0.vibescm.com/mobile_apps"
-                                                                                  logger:NULL
-                                                                             storageType:VibesStorageEnumUSERDEFAULTS
-                                                                       trackedEventTypes:[@[] mutableCopy]];
+                                                                                apiUrl:@"https://public-api-uatus0.vibescm.com/mobile_apps"
+                                                                       trackingApiUrl:@"https://public-api-uatus0.vibescm.com/mobile_apps"
+                                                                                logger:NULL
+                                                                           storageType:VibesStorageEnumUSERDEFAULTS
+                                                                     trackedEventTypes:[@[] mutableCopy]];
   [Vibes configureWithAppId:@"3344c960-f53b-43d5-9b3a-2b4498703ef3"
               configuration:vibesConfig];
-  
-  #ifdef FB_SONARKIT_ENABLED
-    InitializeFlipper(application);
-  #endif
-  RCTBridge *bridge = [[RCTBridge alloc] initWithDelegate:self launchOptions:launchOptions];
-  RCTRootView *rootView = [[RCTRootView alloc] initWithBridge:bridge
-                                                   moduleName:@"VibesExample"
-                                            initialProperties:nil];
 
-  rootView.backgroundColor = [[UIColor alloc] initWithRed:1.0f green:1.0f blue:1.0f alpha:1];
-
-  self.window = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
-  UIViewController *rootViewController = [UIViewController new];
-  rootViewController.view = rootView;
-  self.window.rootViewController = rootViewController;
-  [self.window makeKeyAndVisible];
-  
   [[UNUserNotificationCenter currentNotificationCenter] setDelegate: self];
   [[NSNotificationCenter defaultCenter] addObserver:self
          selector:@selector(didRegisterVibesDevice:)
          name: @"vibesDeviceRegistered"
          object:nil];
-  
+
+  BOOL result = [super application:application didFinishLaunchingWithOptions:launchOptions];
+
   if ([launchOptions objectForKey:UIApplicationLaunchOptionsRemoteNotificationKey]) {
-    // When the app launch after user tap on notification (originally was not running / not in background)
     NSDictionary * payload = [launchOptions objectForKey:UIApplicationLaunchOptionsRemoteNotificationKey];
     NSLog(@"UIApplicationLaunchOptionsRemoteNotificationKey %@", @{@"payload": payload});
     [PushEventEmitter setInitialNotification: @{@"payload": payload}];
   }
 
-  return YES;
-
+  return result;
 }
+
+- (NSURL *)sourceURLForBridge:(RCTBridge *)bridge
+{
+  return [self bundleURL];
+}
+
+- (NSURL *)bundleURL
+{
+#if DEBUG
+  return [[RCTBundleURLProvider sharedSettings] jsBundleURLForBundleRoot:@"index"];
+#else
+  return [[NSBundle mainBundle] URLForResource:@"main" withExtension:@"jsbundle"];
+#endif
+}
+
+#pragma mark - Push Notifications
 
 -(void)application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo {
   NSLog(@"Receive remote push notif");
-  
+
   Vibes const *vibes = [Vibes shared];
   [vibes receivedPushWith:userInfo at:[NSDate new]];
   NSDictionary *payload = @{@"payload": userInfo};
@@ -90,36 +67,20 @@ static void InitializeFlipper(UIApplication *application) {
 - (void)application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo fetchCompletionHandler:(void (^)(UIBackgroundFetchResult))completionHandler
 {
     NSLog(@"didReceiveRemoteNotification:fetchCompletionHandler %@", userInfo);
-  
+
     if(application.applicationState == UIApplicationStateInactive) {
-
             NSLog(@"Inactive");
-
-            //Show the view with the content of the push
-
             completionHandler(UIBackgroundFetchResultNewData);
-
         } else if (application.applicationState == UIApplicationStateBackground) {
-
             NSLog(@"Background");
-
-            NSString *info = [[userInfo valueForKey:@"aps"]valueForKey:@"alert"];
-
             completionHandler(UIBackgroundFetchResultNewData);
-
         } else {
-
             NSLog(@"Active");
-
-            //Show an in-app banner
-
             completionHandler(UIBackgroundFetchResultNewData);
-
         }
-    
+
     Vibes const *vibes = [Vibes shared];
   [vibes receivedPushWith:userInfo at:[NSDate new]];
-  
 }
 
 -(void)userNotificationCenter:(UNUserNotificationCenter *)center didReceiveNotificationResponse:(UNNotificationResponse *)response withCompletionHandler:(void (^)(void))completionHandler {
@@ -128,26 +89,19 @@ static void InitializeFlipper(UIApplication *application) {
   Vibes const *vibes = [Vibes shared];
   [vibes receivedPushWith:userInfo at:[NSDate new]];
   [PushEventEmitter sendPushOpenedEvent: payload];
-  
 }
 
-// Called when a notification is delivered to a foreground app.
 -(void)userNotificationCenter:(UNUserNotificationCenter *)center
       willPresentNotification:(UNNotification *)notification
         withCompletionHandler:(void (^)(UNNotificationPresentationOptions options))completionHandler
 {
-  
   NSDictionary *userInfo = [[[notification request] content] userInfo];
   NSDictionary *payload = @{@"payload": userInfo};
   [PushEventEmitter sendPushReceivedEvent: payload];
 
-  // allow showing foreground notifications
   completionHandler(UNNotificationPresentationOptionSound | UNNotificationPresentationOptionAlert | UNNotificationPresentationOptionBadge);
-  // or if you wish to hide all notification while in foreground replace it with
-  // completionHandler(UNNotificationPresentationOptionNone);
 }
 
-// Required for the register event.
 - (void)application:(UIApplication *)application didRegisterForRemoteNotificationsWithDeviceToken: (NSData *)deviceToken
 {
   NSString * tokenString = [self stringWithDeviceToken: deviceToken];
@@ -162,22 +116,15 @@ static void InitializeFlipper(UIApplication *application) {
 - (NSString *)stringWithDeviceToken:(NSData*) deviceToken {
   const char *data = [deviceToken bytes];
   NSMutableString *token = [NSMutableString string];
-  
+
   for (NSUInteger i = 0; i < [deviceToken length]; i++) {
     [token appendFormat:@"%02.2hhX", data[i]];
   }
-  
+
   return [token copy];
 }
 
 - (void)requestAuthorizationForNotifications {
-#if __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_10_0
-
-  dispatch_async(dispatch_get_main_queue(), ^{
-    [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:(UIUserNotificationTypeSound | UIUserNotificationTypeAlert | UIUserNotificationTypeBadge) categories:nil]];
-    [[UIApplication sharedApplication] registerForRemoteNotifications];
-  });
-#else
   UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
   center.delegate = self;
   [center requestAuthorizationWithOptions:(UNAuthorizationOptionSound | UNAuthorizationOptionAlert | UNAuthorizationOptionBadge) completionHandler:^(BOOL granted, NSError * _Nullable error) {
@@ -192,16 +139,6 @@ static void InitializeFlipper(UIApplication *application) {
       NSLog(@"authorization denied for push");
     }
   }];
-#endif
-}
-
-- (NSURL *)sourceURLForBridge:(RCTBridge *)bridge
-{
-#if DEBUG
-  return [[RCTBundleURLProvider sharedSettings] jsBundleURLForBundleRoot:@"index"];
-#else
-  return [[NSBundle mainBundle] URLForResource:@"main" withExtension:@"jsbundle"];
-#endif
 }
 
 - (void)didRegisterVibesDevice:(NSNotification *)notification
@@ -220,9 +157,6 @@ static void InitializeFlipper(UIApplication *application) {
 
 - (void) dealloc
 {
-    // If you don't remove yourself as an observer, the Notification Center
-    // will continue to try and send notification objects to the deallocated
-    // object.
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 

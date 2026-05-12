@@ -1,26 +1,25 @@
 import { NavigationContainer } from '@react-navigation/native';
-
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
-import AppInbox from './components/AppInbox/AppInbox';
-import AppInboxDetail from './components/AppInboxDetail/AppInboxDetail';
-import Main from './components/Main/Main';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { BrandingProvider, useBranding } from './branding/BrandingContext';
+import MainNavigator from './navigation/MainNavigator';
 
-const Stack = createNativeStackNavigator();
+const AppInner = () => {
+  const { navigationTheme } = useBranding();
+  return (
+    <NavigationContainer theme={navigationTheme}>
+      <MainNavigator />
+    </NavigationContainer>
+  );
+};
 
 const App = () => {
   return (
-    <NavigationContainer>
-      <Stack.Navigator>
-        <Stack.Screen
-          name="Main"
-          component={Main}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen name="AppInbox" component={AppInbox} />
-        <Stack.Screen name="AppInboxDetail" component={AppInboxDetail} />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <BrandingProvider>
+        <AppInner />
+      </BrandingProvider>
+    </GestureHandlerRootView>
   );
 };
 
