@@ -73,3 +73,12 @@ yarn.lock
 **/google-services.json
 **/Podfile.lock
 **/Gemfile.lock
+
+# Fastlane
+sample-app/fastlane/.env*
+sample-app/fastlane/report.xml
+sample-app/fastlane/Preview.html
+sample-app/fastlane/screenshots
+sample-app/fastlane/test_output
+sample-app/fastlane/README.md
+sample-app/build/

@@ -9,13 +9,13 @@ const LINKING_ERROR =
 const Vibes = NativeModules.Vibes
   ? NativeModules.Vibes
   : new Proxy(
-    {},
-    {
-      get() {
-        throw new Error(LINKING_ERROR);
-      },
-    }
-  );
+      {},
+      {
+        get() {
+          throw new Error(LINKING_ERROR);
+        },
+      }
+    );
 
 export interface DeviceResponse {
   device_id?: string;
@@ -70,10 +70,10 @@ export function registerPush(): Promise<void> {
 }
 
 /**
-* Unregister the device from receiving push notifications
-*
-* @return {Promise<void>}
-*/
+ * Unregister the device from receiving push notifications
+ *
+ * @return {Promise<void>}
+ */
 export function unregisterPush(): Promise<void> {
   return Vibes.registerPush();
 }
@@ -146,7 +146,9 @@ export function fetchInboxMessage(message_uid: string): Promise<InboxMessage> {
  * @param {string} message_uid
  * @return {Promise<InboxMessage>} an updated version of the InboxMessage with read field updated
  */
-export function markInboxMessageAsRead(message_uid: string): Promise<InboxMessage> {
+export function markInboxMessageAsRead(
+  message_uid: string
+): Promise<InboxMessage> {
   return Vibes.markInboxMessageAsRead(message_uid);
 }
 

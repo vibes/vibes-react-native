@@ -1,0 +1,8 @@
+# iOS
+app_identifier "com.vibes.push.test.rn"
+team_id "N68EHK7Q3H"
+apple_id ENV["APPLE_ID"] #for login to apple developer account
+
+# Android
+package_name "com.vibes.push.test.rn"
+json_key_file ENV["GOOGLE_PLAY_JSON_KEY_FILE"] #for login to google developer account
