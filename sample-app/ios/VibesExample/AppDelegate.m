@@ -13,13 +13,16 @@
   self.dependencyProvider = [RCTAppDependencyProvider new];
   self.initialProps = @{};
 
+  // Values come from Info.plist (VibesApiURL / VibesAppId); see .env.example
+  NSString *apiUrl = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"VibesApiURL"];
+  NSString *appId = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"VibesAppId"];
   VibesConfiguration *vibesConfig = [[VibesConfiguration alloc] initWithAdvertisingId:NULL
-                                                                                apiUrl:@"https://public-api-uatus0.vibescm.com/mobile_apps"
-                                                                       trackingApiUrl:@"https://public-api-uatus0.vibescm.com/mobile_apps"
+                                                                                apiUrl:apiUrl
+                                                                       trackingApiUrl:apiUrl
                                                                                 logger:NULL
                                                                            storageType:VibesStorageEnumUSERDEFAULTS
                                                                      trackedEventTypes:[@[] mutableCopy]];
-  [Vibes configureWithAppId:@"3344c960-f53b-43d5-9b3a-2b4498703ef3"
+  [Vibes configureWithAppId:appId
               configuration:vibesConfig];
 
   [[UNUserNotificationCenter currentNotificationCenter] setDelegate: self];
@@ -89,6 +92,7 @@
   Vibes const *vibes = [Vibes shared];
   [vibes receivedPushWith:userInfo at:[NSDate new]];
   [PushEventEmitter sendPushOpenedEvent: payload];
+  completionHandler();
 }
 
 -(void)userNotificationCenter:(UNUserNotificationCenter *)center
@@ -124,23 +128,6 @@
   return [token copy];
 }
 
-- (void)requestAuthorizationForNotifications {
-  UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
-  center.delegate = self;
-  [center requestAuthorizationWithOptions:(UNAuthorizationOptionSound | UNAuthorizationOptionAlert | UNAuthorizationOptionBadge) completionHandler:^(BOOL granted, NSError * _Nullable error) {
-    if (error) {
-      NSLog(@"ERROR registering for push: %@ - %@", error.localizedFailureReason, error.localizedDescription );
-    } else if (granted) {
-       NSLog(@"authorization granted for push");
-      dispatch_async(dispatch_get_main_queue(), ^{
-        [[UIApplication sharedApplication] registerForRemoteNotifications];
-      });
-    } else {
-      NSLog(@"authorization denied for push");
-    }
-  }];
-}
-
 - (void)didRegisterVibesDevice:(NSNotification *)notification
 {
   NSString * token = [[NSUserDefaults standardUserDefaults] stringForKey:@"VIBES_PUSH_TOKEN"];
@@ -150,9 +137,6 @@
     [vibes setPushTokenFromData: deviceToken];
   }
   NSLog(@"didRegisterVibesDevice Device ID=%@", notification.object);
-  if ([[Vibes shared] isDeviceRegistered]) {
-    [self requestAuthorizationForNotifications];
-  }
 }
 
 - (void) dealloc

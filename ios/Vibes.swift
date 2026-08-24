@@ -24,6 +24,7 @@ class Vibes: NSObject, RCTBridgeModule, VibesPush.VibesAPIDelegate {
     var unregisterPushRejecter: RCTPromiseRejectBlock?
     var associatePersonResolver: RCTPromiseResolveBlock?
     var associatePersonRejecter: RCTPromiseRejectBlock?
+    var currentExternalPersonId: String?
     var updateDeviceResolver: RCTPromiseResolveBlock?
     var updateDeviceRejecter: RCTPromiseRejectBlock?
 
@@ -117,6 +118,7 @@ class Vibes: NSObject, RCTBridgeModule, VibesPush.VibesAPIDelegate {
                          rejecter reject: @escaping RCTPromiseRejectBlock) {
         associatePersonResolver = resolve
         associatePersonRejecter = reject
+        currentExternalPersonId = externalPersonId
         vibes.associatePerson(externalPersonId: externalPersonId)
     }
 
@@ -142,12 +144,60 @@ class Vibes: NSObject, RCTBridgeModule, VibesPush.VibesAPIDelegate {
     ///   - reject: promise rejector
     func getVibesDeviceInfo(_ resolve: @escaping RCTPromiseResolveBlock,
                             rejecter reject: @escaping RCTPromiseRejectBlock) {
-        if let deviceId = userDefaults.object(forKey: "vibesDeviceId") {
-            if let pushToken = vibes.pushToken {
-                resolve(["device_id": deviceId, "push_token": pushToken])
-                return
+        let deviceId = userDefaults.string(forKey: "vibesDeviceId") ?? ""
+        if let pushToken = vibes.pushToken, !pushToken.isEmpty {
+            resolve([
+                "device_id": deviceId,
+                "push_token": pushToken,
+            ])
+            return
+        }
+        resolve([
+            "device_id": deviceId,
+        ])
+    }
+
+    @objc
+    func getSDKVersion(_ resolve: @escaping RCTPromiseResolveBlock,
+                       rejecter reject: @escaping RCTPromiseRejectBlock) {
+        resolve("1.2.0")
+    }
+
+    @objc
+    func requestNotificationPermissions(_ resolve: @escaping RCTPromiseResolveBlock,
+                                        rejecter reject: @escaping RCTPromiseRejectBlock) {
+        let center = UNUserNotificationCenter.current()
+        center.getNotificationSettings { settings in
+            switch settings.authorizationStatus {
+            case .notDetermined:
+                center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+                    if granted {
+                        DispatchQueue.main.async {
+                            UIApplication.shared.registerForRemoteNotifications()
+                        }
+                        resolve(nil)
+                    } else {
+                        reject(
+                            "NOTIFICATION_PERMISSIONS_ERROR",
+                            error?.localizedDescription ?? "Notification permissions denied",
+                            error
+                        )
+                    }
+                }
+            case .authorized, .provisional, .ephemeral:
+                DispatchQueue.main.async {
+                    UIApplication.shared.registerForRemoteNotifications()
+                }
+                resolve(nil)
+            case .denied:
+                reject(
+                    "NOTIFICATION_PERMISSIONS_ERROR",
+                    "Notification permissions previously denied",
+                    nil
+                )
+            @unknown default:
+                resolve(nil)
             }
-            resolve(["device_id": deviceId])
         }
     }
     
@@ -162,7 +212,10 @@ class Vibes: NSObject, RCTBridgeModule, VibesPush.VibesAPIDelegate {
             if let error = error {
                 reject("GET_PERSON_ERROR", error.localizedDescription, error)
             } else {
-                resolve(["external_person_id": person?.externalPersonId, "person_key": person?.personKey])
+                resolve([
+                    "person_key": person?.personKey ?? "",
+                    "external_person_id": person?.externalPersonId ?? "",
+                ])
             }
         }
     }
@@ -179,11 +232,7 @@ class Vibes: NSObject, RCTBridgeModule, VibesPush.VibesAPIDelegate {
             if let error = error {
                 reject("FETCH_INBOX_MESSAGES_ERROR", error.localizedDescription, error)
             } else {
-                var msgs: [JSONDictionary] = []
-                for msg in messages {
-                    msgs.append(msg.encodeJSON())
-                }
-                resolve(msgs)
+                resolve(messages.map { $0.encodeJSON() })
             }
         })
     }
@@ -264,10 +313,10 @@ class Vibes: NSObject, RCTBridgeModule, VibesPush.VibesAPIDelegate {
     ///  Inbox Message Opened
     ///
     /// - Parameters:
-    ///   - message: The Inbox Message
+    ///   - message: inbox message dictionary
     ///   - resolve: promise resolver
     ///   - reject: promise rejector
-    func onInboxMessageOpen(_ message: VibesJSONDictionary,
+    func onInboxMessageOpen(_ message: [String: Any],
                            resolve: @escaping RCTPromiseResolveBlock,
                            reject: @escaping RCTPromiseRejectBlock ) -> Void {
         guard let inboxMessage = InboxMessage(attributes: message) else {
@@ -360,12 +409,16 @@ class Vibes: NSObject, RCTBridgeModule, VibesPush.VibesAPIDelegate {
             }
         } else {
             if let associatePersonResolver = associatePersonResolver {
-                associatePersonResolver("Successs")
+                associatePersonResolver([
+                    "externalPersonId": self.currentExternalPersonId ?? "",
+                    "status": "success",
+                ])
             }
             NotificationCenter.default.post(name: Notification.Name.vibesPushDidAssociatePerson, object: nil)
         }
         associatePersonRejecter = nil
         associatePersonResolver = nil
+        currentExternalPersonId = nil
     }
 }
 

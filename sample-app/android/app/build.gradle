@@ -80,16 +80,14 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.vibes.push.test.rn"
+    namespace "com.vibes.push.example.rn"
     defaultConfig {
-        applicationId "com.vibes.push.test.rn"
+        applicationId "com.vibes.push.example.rn"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
-        manifestPlaceholders = [vibesAppId: "3344c960-f53b-43d5-9b3a-2b4498703ef3",
-                                vibesApiUrl: "https://public-api-uatus0.vibescm.com/mobile_apps"]
-        
+        manifestPlaceholders = [vibesAppId: "[YOUR_ANDROID_APP_ID]", vibesApiUrl: "[YOUR_API_URL]"]
     }
     signingConfigs {
         debug {
@@ -109,6 +107,12 @@ android {
             signingConfig signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+        }
+    }
+
+    packaging {
+        resources {
+            excludes += ["META-INF/DEPENDENCIES"]
         }
     }
 }

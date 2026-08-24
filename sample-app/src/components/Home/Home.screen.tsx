@@ -110,6 +110,7 @@ const Home = (): React.ReactElement => {
         await Vibes.unregisterPush();
         setPushToken(null);
       } else {
+        await Vibes.requestNotificationPermissions();
         await Vibes.registerPush();
         const result: DeviceInfoResponse = await Vibes.getVibesDeviceInfo();
         if (result.device_id) {

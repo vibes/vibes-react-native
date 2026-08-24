@@ -25,8 +25,5 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-        maven {
-            url "https://raw.githubusercontent.com/vibes/android-sdk-repository/releases/"
-        }
     }
 }

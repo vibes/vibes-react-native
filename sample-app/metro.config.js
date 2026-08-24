@@ -8,7 +8,6 @@ const projectRoot = __dirname;
 const repoRoot = path.resolve(projectRoot, '..');
 const appNodeModules = path.resolve(projectRoot, 'node_modules');
 
-/** Peer deps of the library: resolve from the example app, not the repo root. */
 const peerNames = Object.keys(pak.peerDependencies || {});
 const peerRootBlockList = peerNames.map(
   (name) =>
@@ -23,12 +22,6 @@ const extraNodeModules = peerNames.reduce((acc, name) => {
 }, {});
 extraNodeModules['vibes-react-native'] = repoRoot;
 
-/**
- * Must extend `@react-native/metro-config` so `transformer.assetRegistryPath` (and the
- * RN Babel transformer) are set. A plain `transformer: { getTransformOptions }` object
- * replaces the whole transformer and restores Metro’s placeholder
- * `missing-asset-registry-path`, which breaks image assets (e.g. React Navigation icons).
- */
 module.exports = mergeConfig(getDefaultConfig(projectRoot), {
   projectRoot,
   watchFolders: [repoRoot],

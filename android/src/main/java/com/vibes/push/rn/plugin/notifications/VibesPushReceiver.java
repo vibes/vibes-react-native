@@ -59,4 +59,34 @@ public class VibesPushReceiver extends VibesReceiver {
       }
     });
   }
+
+  /**
+   * Called from MainActivity.onCreate when a notification launch intent may
+   * contain Vibes push payload data (Android 12+).
+   */
+  @SuppressWarnings("unchecked")
+  public static void handlePushOpened(Context context, android.content.Intent intent) {
+    Log.d(TAG, "Checking if Vibes push message exists in intent");
+    if (intent == null) {
+      return;
+    }
+    java.util.HashMap<String, String> pushMap = null;
+    try {
+      pushMap = (java.util.HashMap<String, String>) intent
+          .getSerializableExtra(Vibes.VIBES_REMOTE_MESSAGE_DATA);
+    } catch (ClassCastException e) {
+      Log.e(TAG, "Unexpected push payload type in intent", e);
+    }
+    if (pushMap != null) {
+      PushPayloadParser pushModel = new PushPayloadParser(pushMap);
+      try {
+        Vibes.getInstance().onPushMessageOpened(pushModel, context);
+      } catch (IllegalStateException e) {
+        Log.e(TAG, "Vibes not initialized yet; emitting push without SDK callback", e);
+      }
+      emitPayload(context, pushModel);
+    } else {
+      Log.d(TAG, "No push received");
+    }
+  }
 }

@@ -10,8 +10,7 @@ import com.facebook.react.bridge.*;
 import com.facebook.react.module.annotations.ReactModule;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.firebase.iid.FirebaseInstanceId;
-import com.google.firebase.iid.InstanceIdResult;
+import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.gson.Gson;
 import com.vibes.vibes.*;
 import org.json.JSONException;
@@ -58,15 +57,14 @@ public class VibesModule extends ReactContextBaseJavaModule {
 
   @Override
   public void initialize() {
-    FirebaseInstanceId.getInstance().getInstanceId()
+    FirebaseMessaging.getInstance().getToken()
         .addOnSuccessListener(
-            new OnSuccessListener<InstanceIdResult>() {
+            new OnSuccessListener<String>() {
               @Override
-              public void onSuccess(InstanceIdResult instanceIdResult) {
-                String instanceToken = instanceIdResult.getToken();
+              public void onSuccess(String instanceToken) {
                 if (instanceToken != null) {
                   appHelper.saveString(VibesModule.TOKEN_KEY, instanceToken);
-                  Log.d(TAG, "Push token obtained from FirebaseInstanceId --> " + instanceToken);
+                  Log.d(TAG, "Push token obtained from FirebaseMessaging --> " + instanceToken);
                 }
               }
             })
@@ -74,7 +72,7 @@ public class VibesModule extends ReactContextBaseJavaModule {
             new OnFailureListener() {
               @Override
               public void onFailure(Exception e) {
-                Log.d(TAG, "Failed to fetch token from FirebaseInstanceId: " + e.getLocalizedMessage());
+                Log.d(TAG, "Failed to fetch token from FirebaseMessaging: " + e.getLocalizedMessage());
               }
             });
 
@@ -113,6 +111,11 @@ public class VibesModule extends ReactContextBaseJavaModule {
   }
 
   @ReactMethod
+  public void getSDKVersion(final Promise promise) {
+    promise.resolve("1.2.0");
+  }
+
+  @ReactMethod
   public void registerDevice(final Promise promise) {
     Log.d(TAG, "Plugin called to register device");
     VibesListener<Credential> listener = getRegisterDeviceListener(promise);
@@ -132,17 +135,16 @@ public class VibesModule extends ReactContextBaseJavaModule {
     VibesListener<Void> listener = getRegisterPushListener(promise);
     String pushToken = appHelper.getPushToken();
     if (pushToken == null) {
-      FirebaseInstanceId.getInstance().getInstanceId()
+      FirebaseMessaging.getInstance().getToken()
           .addOnSuccessListener(
-              new OnSuccessListener<InstanceIdResult>() {
+              new OnSuccessListener<String>() {
                 @Override
-                public void onSuccess(InstanceIdResult instanceIdResult) {
-                  String instanceToken = instanceIdResult.getToken();
+                public void onSuccess(String instanceToken) {
                   if (instanceToken == null) {
                     promise.reject(REGISTER_PUSH_ERROR_KEY, "No push token available for registration yet");
                   } else {
                     appHelper.saveString(VibesModule.TOKEN_KEY, instanceToken);
-                    Log.d(TAG, "Push token obtianed from FirebaseInstanceId --> " + instanceToken);
+                    Log.d(TAG, "Push token obtained from FirebaseMessaging --> " + instanceToken);
                     VibesListener<Void> listener = getRegisterPushListener(promise);
                     registerPush(instanceToken, listener);
                   }
@@ -152,7 +154,7 @@ public class VibesModule extends ReactContextBaseJavaModule {
               new OnFailureListener() {
                 @Override
                 public void onFailure(Exception e) {
-                  Log.d(TAG, "Failed to fetch token from FirebaseInstanceId: " + e.getLocalizedMessage());
+                  Log.d(TAG, "Failed to fetch token from FirebaseMessaging: " + e.getLocalizedMessage());
                   promise.reject(REGISTER_DEVICE_ERROR_KEY, "No push token available for registration yet");
                 }
               });
@@ -294,8 +296,10 @@ public class VibesModule extends ReactContextBaseJavaModule {
     Log.d(TAG, "Associating Person --> " + externalPersonId);
     VibesListener<Void> listener = new VibesListener<Void>() {
       public void onSuccess(Void value) {
-        promise.resolve("Success");
-        ;
+        WritableMap map = Arguments.createMap();
+        map.putString("externalPersonId", externalPersonId);
+        map.putString("status", "success");
+        promise.resolve(map);
       }
 
       public void onFailure(String errorText) {
@@ -356,16 +360,9 @@ public class VibesModule extends ReactContextBaseJavaModule {
     VibesListener<Collection<InboxMessage>> listener = new VibesListener<Collection<InboxMessage>>() {
       public void onSuccess(Collection<InboxMessage> values) {
         Log.d(TAG, "Fetch inbox messages success");
-        Gson gson = new Gson();
         WritableArray array = Arguments.createArray();
         for (InboxMessage message : values) {
-          try {
-            JSONObject jsonObject = new JSONObject(gson.toJson(message));
-            WritableMap writableMap = appHelper.convertJsonToMap(jsonObject);
-            array.pushMap(writableMap);
-          } catch (JSONException e) {
-            Log.e(TAG, e.getLocalizedMessage());
-          }
+          array.pushMap(mapInboxMessage(message));
         }
         if (promise != null) {
           promise.resolve(array);
@@ -385,16 +382,8 @@ public class VibesModule extends ReactContextBaseJavaModule {
     VibesListener<InboxMessage> listener = new VibesListener<InboxMessage>() {
       public void onSuccess(InboxMessage message) {
         Log.d(TAG, "Fetch single inbox message success");
-        Gson gson = new Gson();
-        try {
-          JSONObject jsonObject = new JSONObject(gson.toJson(message));
-          WritableMap writableMap = appHelper.convertJsonToMap(jsonObject);
-          if (promise != null) {
-            promise.resolve(writableMap);
-          }
-        } catch (JSONException e) {
-          Log.e(TAG, e.getLocalizedMessage());
-          promise.reject(FETCH_SINGLE_INBOX_MESSAGE_ERROR, e.getLocalizedMessage());
+        if (promise != null) {
+          promise.resolve(mapInboxMessage(message));
         }
       }
 
@@ -411,16 +400,8 @@ public class VibesModule extends ReactContextBaseJavaModule {
     VibesListener<InboxMessage> listener = new VibesListener<InboxMessage>() {
       public void onSuccess(InboxMessage message) {
         Log.d(TAG, "Mark inbox message as read");
-        Gson gson = new Gson();
-        try {
-          JSONObject jsonObject = new JSONObject(gson.toJson(message));
-          WritableMap writableMap = appHelper.convertJsonToMap(jsonObject);
-          if (promise != null) {
-            promise.resolve(writableMap);
-          }
-        } catch (JSONException e) {
-          Log.e(TAG, e.getLocalizedMessage());
-          promise.reject(MARK_INBOX_MESSAGE_AS_READ_ERROR, e.getLocalizedMessage());
+        if (promise != null) {
+          promise.resolve(mapInboxMessage(message));
         }
       }
 
@@ -437,16 +418,8 @@ public class VibesModule extends ReactContextBaseJavaModule {
     VibesListener<InboxMessage> listener = new VibesListener<InboxMessage>() {
       public void onSuccess(InboxMessage message) {
         Log.d(TAG, "Expiring inbox message successful");
-        Gson gson = new Gson();
-        try {
-          JSONObject jsonObject = new JSONObject(gson.toJson(message));
-          WritableMap writableMap = appHelper.convertJsonToMap(jsonObject);
-          if (promise != null) {
-            promise.resolve(writableMap);
-          }
-        } catch (JSONException e) {
-          Log.e(TAG, e.getLocalizedMessage());
-          promise.reject(EXPIRE_INBOX_MESSAGE_ERROR, e.getLocalizedMessage());
+        if (promise != null) {
+          promise.resolve(mapInboxMessage(message));
         }
       }
 
@@ -474,7 +447,6 @@ public class VibesModule extends ReactContextBaseJavaModule {
       Log.e(TAG, "Error recording inbox_open event: " + e.getLocalizedMessage());
       promise.reject(INBOX_MESSAGE_OPEN_ERROR, e.getLocalizedMessage());
     }
-
   }
 
   @ReactMethod
@@ -484,6 +456,17 @@ public class VibesModule extends ReactContextBaseJavaModule {
     if (promise != null) {
       Log.d(TAG, "Success recording an inbox_fetch event");
       promise.resolve("");
+    }
+  }
+
+  private WritableMap mapInboxMessage(InboxMessage message) {
+    Gson gson = new Gson();
+    try {
+      JSONObject jsonObject = new JSONObject(gson.toJson(message));
+      return appHelper.convertJsonToMap(jsonObject);
+    } catch (JSONException e) {
+      Log.e(TAG, e.getLocalizedMessage());
+      return Arguments.createMap();
     }
   }
 

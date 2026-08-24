@@ -2,6 +2,9 @@
 
 @interface RCT_EXTERN_MODULE(Vibes, NSObject)
 
+RCT_EXTERN_METHOD(getSDKVersion: (RCTPromiseResolveBlock *)resolve
+                                    rejecter:(RCTPromiseRejectBlock *)reject)
+
 RCT_EXTERN_METHOD(registerDevice: (RCTPromiseResolveBlock *)resolve
                                     rejecter:(RCTPromiseRejectBlock *)reject)
 
@@ -30,7 +33,6 @@ RCT_EXTERN_METHOD(updateDevice: (BOOL ) updateCredentials
 RCT_EXTERN_METHOD(getPerson: (RCTPromiseResolveBlock *)resolve
                                     rejecter:(RCTPromiseRejectBlock *)reject)
 
-
 RCT_EXTERN_METHOD(fetchInboxMessages: (RCTPromiseResolveBlock *)resolve
                                         rejecter:(RCTPromiseRejectBlock *)reject)
 
@@ -52,5 +54,7 @@ RCT_EXTERN_METHOD(onInboxMessageOpen: (NSDictionary *) message
 
 RCT_EXTERN_METHOD(onInboxMessagesFetched: (RCTPromiseResolveBlock *)resolve
                                     reject:(RCTPromiseRejectBlock *)reject)
-@end
 
+RCT_EXTERN_METHOD(requestNotificationPermissions: (RCTPromiseResolveBlock *)resolve
+                                    rejecter:(RCTPromiseRejectBlock *)reject)
+@end

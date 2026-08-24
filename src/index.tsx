@@ -1,4 +1,20 @@
-import { NativeModules, Platform } from 'react-native';
+import { NativeModules, PermissionsAndroid, Platform } from 'react-native';
+
+import type {
+  AssociatePersonResponse,
+  DeviceInfoResponse,
+  DeviceResponse,
+  InboxMessage,
+  PersonResponse,
+} from './types';
+
+export type {
+  AssociatePersonResponse,
+  DeviceInfoResponse,
+  DeviceResponse,
+  InboxMessage,
+  PersonResponse,
+} from './types';
 
 const LINKING_ERROR =
   `The package 'vibes-react-native' doesn't seem to be linked. Make sure: \n\n` +
@@ -6,7 +22,7 @@ const LINKING_ERROR =
   '- You rebuilt the app after installing the package\n' +
   '- You are not using Expo managed workflow\n';
 
-const Vibes = NativeModules.Vibes
+const NativeVibes = NativeModules.Vibes
   ? NativeModules.Vibes
   : new Proxy(
       {},
@@ -17,30 +33,13 @@ const Vibes = NativeModules.Vibes
       }
     );
 
-export interface DeviceResponse {
-  device_id?: string;
-}
-export interface DeviceInfoResponse extends DeviceResponse {
-  push_token?: string;
-}
-
-export interface PersonResponse {
-  person_key?: string;
-  external_person_id?: string;
-}
-
-export interface InboxMessage {
-  content?: string;
-  created_at?: string;
-  expires_at?: string;
-  message_uid?: string;
-  read?: boolean;
-  subject?: string;
-  detail?: string;
-  collapse_key?: string;
-  apprefdata?: any;
-  images?: any;
-  inbox_custom_data: any;
+/**
+ * Returns the wrapper SDK version string.
+ *
+ * @return {Promise<string>}
+ */
+export function getSDKVersion(): Promise<string> {
+  return NativeVibes.getSDKVersion();
 }
 
 /**
@@ -49,7 +48,7 @@ export interface InboxMessage {
  * @return {Promise<DeviceResponse>}
  */
 export function registerDevice(): Promise<DeviceResponse> {
-  return Vibes.registerDevice();
+  return NativeVibes.registerDevice();
 }
 /**
  * Unregister this device with the Vibes platform
@@ -57,7 +56,7 @@ export function registerDevice(): Promise<DeviceResponse> {
  * @return {Promise<void>}
  */
 export function unregisterDevice(): Promise<void> {
-  return Vibes.unregisterDevice();
+  return NativeVibes.unregisterDevice();
 }
 
 /**
@@ -66,7 +65,7 @@ export function unregisterDevice(): Promise<void> {
  * @return {Promise<void>}
  */
 export function registerPush(): Promise<void> {
-  return Vibes.registerPush();
+  return NativeVibes.registerPush();
 }
 
 /**
@@ -75,7 +74,7 @@ export function registerPush(): Promise<void> {
  * @return {Promise<void>}
  */
 export function unregisterPush(): Promise<void> {
-  return Vibes.registerPush();
+  return NativeVibes.unregisterPush();
 }
 
 /**
@@ -84,7 +83,7 @@ export function unregisterPush(): Promise<void> {
  * @return {Promise<DeviceInfoResponse>}
  */
 export function getVibesDeviceInfo(): Promise<DeviceInfoResponse> {
-  return Vibes.getVibesDeviceInfo();
+  return NativeVibes.getVibesDeviceInfo();
 }
 
 /**
@@ -100,17 +99,19 @@ export function updateDevice(
   latitude: number,
   longitude: number
 ): Promise<void> {
-  return Vibes.updateDevice(updateCredential, latitude, longitude);
+  return NativeVibes.updateDevice(updateCredential, latitude, longitude);
 }
 
 /**
  * Associate an external ID with the current person.
  *
  * @param {string} externalPersonId
- * @return {Promise<void>}
+ * @return {Promise<AssociatePersonResponse>}
  */
-export function associatePerson(externalPersonId: string): Promise<void> {
-  return Vibes.associatePerson(externalPersonId);
+export function associatePerson(
+  externalPersonId: string
+): Promise<AssociatePersonResponse> {
+  return NativeVibes.associatePerson(externalPersonId);
 }
 
 /**
@@ -119,7 +120,7 @@ export function associatePerson(externalPersonId: string): Promise<void> {
  * @return {Promise<PersonResponse>}
  */
 export function getPerson(): Promise<PersonResponse> {
-  return Vibes.getPerson();
+  return NativeVibes.getPerson();
 }
 /**
  * Fetches an array of inbox messages for the person associated with this device.
@@ -127,7 +128,7 @@ export function getPerson(): Promise<PersonResponse> {
  * @return {Promise<InboxMessage[]>}
  */
 export function fetchInboxMessages(): Promise<InboxMessage[]> {
-  return Vibes.fetchInboxMessages();
+  return NativeVibes.fetchInboxMessages();
 }
 
 /**
@@ -137,7 +138,7 @@ export function fetchInboxMessages(): Promise<InboxMessage[]> {
  * @return {Promise<InboxMessage>}
  */
 export function fetchInboxMessage(message_uid: string): Promise<InboxMessage> {
-  return Vibes.fetchInboxMessage(message_uid);
+  return NativeVibes.fetchInboxMessage(message_uid);
 }
 
 /**
@@ -149,7 +150,7 @@ export function fetchInboxMessage(message_uid: string): Promise<InboxMessage> {
 export function markInboxMessageAsRead(
   message_uid: string
 ): Promise<InboxMessage> {
-  return Vibes.markInboxMessageAsRead(message_uid);
+  return NativeVibes.markInboxMessageAsRead(message_uid);
 }
 
 /**
@@ -159,17 +160,17 @@ export function markInboxMessageAsRead(
  * @return {Promise<InboxMessage>} an updated version of the InboxMessage with expires_at date updated
  */
 export function expireInboxMessage(message_uid: string): Promise<InboxMessage> {
-  return Vibes.expireInboxMessage(message_uid);
+  return NativeVibes.expireInboxMessage(message_uid);
 }
 
 /**
  * Records an event for when the user opens an inbox message.
  *
- * @param inboxMap json map of the InboxMessage
+ * @param inboxMessage - json map of the InboxMessage
  * @return {Promise<void>}
  */
-export function onInboxMessageOpen(inboxMap: InboxMessage): Promise<void> {
-  return Vibes.onInboxMessageOpen(inboxMap);
+export function onInboxMessageOpen(inboxMessage: InboxMessage): Promise<void> {
+  return NativeVibes.onInboxMessageOpen(inboxMessage);
 }
 
 /**
@@ -178,7 +179,47 @@ export function onInboxMessageOpen(inboxMap: InboxMessage): Promise<void> {
  * @return {Promise<void>}
  */
 export function onInboxMessagesFetched(): Promise<void> {
-  return Vibes.onInboxMessagesFetched();
+  return NativeVibes.onInboxMessagesFetched();
 }
+
+/**
+ * Requests notification permissions from the OS.
+ *
+ * - iOS: prompts via UNUserNotificationCenter and registers for remote notifications
+ * - Android 13+: requests POST_NOTIFICATIONS via PermissionsAndroid
+ * - Android 12 and below: no-op (permission not required)
+ *
+ * @return {Promise<void>}
+ */
+export async function requestNotificationPermissions(): Promise<void> {
+  if (Platform.OS === 'android') {
+    const apiLevel =
+      typeof Platform.Version === 'number'
+        ? Platform.Version
+        : parseInt(String(Platform.Version), 10);
+    // POST_NOTIFICATIONS is only required on Android 13+ (API 33)
+    if (!Number.isNaN(apiLevel) && apiLevel < 33) {
+      return;
+    }
+    const result = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
+    );
+    if (result !== PermissionsAndroid.RESULTS.GRANTED) {
+      throw new Error('Notification permissions denied');
+    }
+    return;
+  }
+  return NativeVibes.requestNotificationPermissions();
+}
+
+const Vibes = new Proxy(NativeVibes, {
+  get(target, prop, receiver) {
+    if (prop === 'requestNotificationPermissions') {
+      return requestNotificationPermissions;
+    }
+    const value = Reflect.get(target, prop, receiver);
+    return typeof value === 'function' ? value.bind(target) : value;
+  },
+});
 
 export default Vibes;
