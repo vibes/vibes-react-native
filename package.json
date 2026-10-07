@@ -1,6 +1,6 @@
 {
   "name": "vibes-react-native",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "description": "The React Native plugin for the Vibes Mobile SDKs",
   "author": "Vibes",
   "main": "lib/commonjs/index",

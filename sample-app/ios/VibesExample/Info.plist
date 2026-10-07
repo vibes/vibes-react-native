@@ -59,12 +59,10 @@
     </array>
     <key>UIViewControllerBasedStatusBarAppearance</key>
     <false/>
-    <key>VibesAppEnv</key>
-    <string>[YOUR_APP_ENV]</string>
     <key>VibesAppId</key>
     <string>[YOUR_IOS_APP_ID]</string>
     <key>VibesApiURL</key>
-    <string>[YOUR_API_URL]</string>
+    <string>https://public-api.vibescm.com/mobile_apps</string>
     <key>UIAppFonts</key>
     <array>
       <string>AntDesign.ttf</string>

@@ -35,10 +35,8 @@ class VibesPluginLogger: NSObject {
         if let devId = UserDefaults.standard.vibesDeviceId {
             deviceId = devId
         }
-        // get env from plist config file if set, else throw fatal error
-        guard let env = Configuration.configValue(.vibesAppEnv) else {
-            fatalError("`\(ConfigKey.vibesAppEnv.value())` must be set in plist file of current build configuration")
-        }
+        // Prefer VibesAppEnv from Info.plist; default to production when unset.
+        let env = Configuration.configValue(.vibesAppEnv) ?? "PROD"
         let jsonObj: [String: Any] = ["os_type": "iOS",
                                       "device_id": deviceId ?? " - ",
                                       "env": env,

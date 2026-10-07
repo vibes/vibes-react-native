@@ -80,14 +80,14 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.vibes.push.example.rn"
+    namespace "com.vibes.push.test.rn"
     defaultConfig {
         applicationId "com.vibes.push.example.rn"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
-        manifestPlaceholders = [vibesAppId: "[YOUR_ANDROID_APP_ID]", vibesApiUrl: "[YOUR_API_URL]"]
+        manifestPlaceholders = [vibesAppId: "[YOUR_ANDROID_APP_ID]", vibesApiUrl: "https://public-api.vibescm.com/mobile_apps"]
     }
     signingConfigs {
         debug {

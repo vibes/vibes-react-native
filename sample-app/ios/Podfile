@@ -14,6 +14,8 @@ target 'VibesExample' do
     :path => config[:reactNativePath],
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
+  # VibesPush from git (CocoaPods trunk may not have this version)
+  pod 'VibesPush', :git => 'https://github.com/vibes/push-sdk-ios.git', :tag => '5.0.1'
 
   pod 'React-RCTPushNotification', :path => '../node_modules/react-native/Libraries/PushNotificationIOS'
 

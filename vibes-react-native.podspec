@@ -16,5 +16,9 @@ Pod::Spec.new do |s|
   s.source_files = "ios/**/*.{h,m,mm,swift}"
 
   s.dependency "React-Core"
-      s.dependency "VibesPush", "5.0.0"
+      # does not have that version, the app Podfile must pin git:
+  #   pod 'VibesPush', :git => 'https://github.com/vibes/push-sdk-ios.git', :tag => 'VERSION'
+  # If CocoaPods trunk does not have this version, add to the app Podfile:
+  #   pod 'VibesPush', :git => 'https://github.com/vibes/push-sdk-ios.git', :tag => '5.0.1'
+  s.dependency "VibesPush", "5.0.1"
 end
